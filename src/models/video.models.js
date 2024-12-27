@@ -4,11 +4,17 @@ const videoSchema = new Schema(
     {
 
         videoFile: {
-            type: String,
+            type: {
+                url: String,
+                public_id: String,
+            },
             required: true
         },
         thumbnail: {
-            type: String,
+            type: {
+                url: String,
+                public_id: String,
+            },
             required: true
         },
         title: {
@@ -39,6 +45,8 @@ const videoSchema = new Schema(
     { timestapms: true }
 )
 
+
+videoSchema.plugin(mongooseAggregatepagiante)
 
 
 export const Video = mongoose.model("video", videoSchema)

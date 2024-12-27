@@ -14,6 +14,42 @@ app.use(express.urlencoded({ extended: true, limit: "16kb" }))
 app.use(express.static("public"))
 app.use(cookieParser())
 
-console.log(
-    'hii9999999999999'
-);
+//routes
+import userRouter from './routes/user.routes.js'
+import videoRoute from './routes/video.routes.js'
+
+
+//routes declaration
+app.use("/api/v1/users", userRouter)
+app.use("/api/v1/videos", videoRoute)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// app.use("/api/v1/users", (req, res) => {
+//     res.send("i am shivendra kumar")
+// })
+console.log("hii");
+
+app.use("/tests", (req, res) => {
+    res.send("i am shivendra kumar")
+
+})
+
+app.get('/test', (req, res) => {
+    res.send('Test route working!');
+});
+
+//http://localhost:8000/api/v1/users/register
+
+export { app }
