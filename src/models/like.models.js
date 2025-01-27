@@ -1,4 +1,4 @@
-import mongoose, { Schema } from 'mongooose';
+import mongoose, { Schema } from 'mongoose';
 
 const likeSchema = new Schema(
     {
@@ -13,6 +13,10 @@ const likeSchema = new Schema(
         tweet: {
             type: Schema.Types.ObjectId,
             ref: "Tweet"
+        },
+        isLike: {
+            type: Boolean,
+            default: null
         },
         likeBy: {
             type: Schema.Types.ObjectId,

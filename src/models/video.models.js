@@ -44,7 +44,7 @@ const videoSchema = new Schema(
     },
     { timestapms: true }
 )
-
+videoSchema.index({ title: "text", description: "text" });  // serach query make easy
 
 videoSchema.plugin(mongooseAggregatepagiante)
 

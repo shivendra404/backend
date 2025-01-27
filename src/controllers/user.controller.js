@@ -2,7 +2,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { User } from '../models/user.models.js';
 import { ApiError } from '../utils/ApiError.js';
 import { ApiResponse } from '../utils/ApiResponse.js'
-import { uploadOnCloudinary } from '../utils/cloudinary.js';
+import { uploadOnCloudinary, deleteFromCloudinary } from '../utils/cloudinary.js';
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 
@@ -31,7 +31,7 @@ const generateAccessAndRefreshTokens = async (userId) => {
         throw new ApiError(500, "something went wrong")
 
     }
-}
+
 
 const registerUser = asyncHandler(async (req, res) => {
     // res.status(200).json({
@@ -57,6 +57,8 @@ const registerUser = asyncHandler(async (req, res) => {
     // if (fullName === "") {
     //     throw new ApiError(400, "fullname is required")
     // }
+
+    console.log(typeof fullName === 'number', "yes it is a number");
 
     if (
         [fullName, email, password, username].some((field) =>
@@ -92,14 +94,20 @@ const registerUser = asyncHandler(async (req, res) => {
     const avatar = await uploadOnCloudinary(avatarLocalPath)
     const coverImage = await uploadOnCloudinary(coverImageLocalPath)
 
+    // console.log(avatar);
+
     if (!avatar) {
         throw new ApiError(400, "avatar file is required")
     }
 
+    // console.log("all fine");
+
     const user = await User.create({
         fullName,
-        avatar: avatar.url,
-        coverImage: coverImage?.url || "",
+        avatar: { url: avatar.secure_url, public_id: avatar.public_id },
+        coverImage: {
+            url: coverImage?.secure_url || "", public_id: coverImage.public_id
+        },
         email,
         password,
         username: username.toLowerCase()
@@ -110,7 +118,7 @@ const registerUser = asyncHandler(async (req, res) => {
     const createdUser = await User.findById(user._id).select(
         "-password -refreshToken")
 
-    console.log(createdUser);
+    // console.log(createdUser);
 
 
     if (!createdUser) {
@@ -124,6 +132,43 @@ const registerUser = asyncHandler(async (req, res) => {
 
 
 })
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 const loginUser = asyncHandler(async (req, res) => {
     //req body data
@@ -146,6 +191,9 @@ const loginUser = asyncHandler(async (req, res) => {
     if (!user) {
         throw new ApiError(400, "User does not exist")
     }
+
+    console.log(user);
+
 
     const isPasswordValid = await user.isPasswordCorrect(password)
 
@@ -341,17 +389,29 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
         throw new ApiError(400, "error while uploading avatar ")
     }
 
+    //store avater publicid before update for deletion
+    const oldUser = await User.findOne(req?._id).select("+avatar");
+    console.log(oldUser);
+
+    const avatarPublicId = oldUser.avatar.public_id
+
     const user = await User.findByIdAndUpdate(
         req.user._id,
         {
             $set: {
-                avatar: avatar.url
-
+                avatar: { url: avatar.secure_url, public_id: avatar.public_id },
             }
         },
         { new: true })
         .select("-password")
-    //delte privious avatar
+    console.log();
+
+    //delete privious avatar
+    if (avatarPublicId && user.avatar.public_id) {
+        await deleteFromCloudinary(avatarPublicId)
+        // const oldavt = await deleteFromCloudinary(avatarPublicId)
+        // console.log(oldavt);
+    }
 
     return res
         .status(200)
@@ -375,6 +435,10 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
         throw new ApiError(400, "error while uploading coverimage")
     }
 
+    const oldUser = await User.findOne(req?._id);
+    console.log(oldUser);
+
+    const coverImagePublicId = oldUser.coverImage.public_id
 
 
     const user = await User.findByIdAndUpdate(
@@ -385,7 +449,14 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
             }
         },
         { new: true }).select("-password")
+
     //delte privious coverimage
+    if (coverImagePublicId && user.coverImage.public_id) {
+        await deleteFromCloudinary(coverImagePublicId)
+        // const oldCOImg = await deleteFromCloudinary(coverImagePublicId)
+        // console.log(oldCOImg);
+    }
+
     return res
         .status(200)
         .json(
@@ -408,7 +479,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
         },
         {
             $lookup: {
-                from: "Subscription",
+                from: "subscriptions",
                 localField: "_id",
                 foreignField: "channel",
                 as: "subscribers"
@@ -416,7 +487,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
         },
         {
             $lookup: {
-                from: "Subscription",
+                from: "subscriptions",
                 localField: "_id",
                 foreignField: "subscriber",
                 as: "subscribedTo"
@@ -467,7 +538,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
 
 const getWatchHistory = asyncHandler(async (req, res) => {
 
-   
+
     const user = await User.aggregate([
         {
             $match: {
@@ -476,7 +547,7 @@ const getWatchHistory = asyncHandler(async (req, res) => {
         },
         {
             $lookup: {
-                from: "video",
+                from: "videos",
                 localField: "watchHistory",
                 foreignField: "_id",
                 as: "watchHistory",
@@ -530,3 +601,4 @@ export {
     getUserChannelProfile,
     getWatchHistory
 }
+

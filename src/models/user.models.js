@@ -26,11 +26,17 @@ const userSchema = new Schema(
             index: true
         },
         avatar: {
-            type: String, //take url from cloud,aws
+            type: {
+                public_id: String,
+                url: String //cloudinary url
+            }, //take from cloud,aws
             required: true,
         },
         coverImage: {
-            type: String  //take url from cloud,aws
+            type: {
+                public_id: String,
+                url: String //cloudinary url
+            },  //take from cloud,aws
         },
         watchHistory: [
             {
@@ -39,7 +45,7 @@ const userSchema = new Schema(
             }
         ],
         password: {
-            type: String,
+            type: Number,
             required: [true, 'password is required'],
         },
         refreshToken: {
@@ -77,6 +83,7 @@ userSchema.methods.generateAccessToken = function () {
         }
     )
 }
+
 userSchema.methods.generateRefreshToken = function () {
     return jwt.sign(
         {
@@ -90,3 +97,4 @@ userSchema.methods.generateRefreshToken = function () {
     )
 }
 export const User = mongoose.model("User", userSchema)
+
